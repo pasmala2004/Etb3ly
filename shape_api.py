@@ -18,43 +18,38 @@ pipeline = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
 pipeline.to('cuda')
 print("Model ready!")
 
-@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET'])
 def health():
-    return jsonify({"status": "running"})
+    return jsonify({"statushealth": "running"})
 
 @app.route('/generate', methods=['POST'])
 def generate():
     try:
         img_data = None
-        content_type = request.content_type or ''
-
-        # ── Handle JSON ──────────────────────────────
-        if 'application/json' in content_type:
-            data = request.json
-            if not data or 'image' not in data:
-                return jsonify({"error": "Missing 'image' field in JSON body"}), 400
-            img_data = base64.b64decode(data['image'])
-
-        # ── Handle multipart/form-data ───────────────
-        elif 'multipart/form-data' in content_type:
-            file = request.files.get('image')
-            if not file:
-                return jsonify({"error": "Missing 'image' field in form data"}), 400
+        
+        # 1. Try Multipart Form (Postman 'form-data')
+        if 'image' in request.files:
+            file = request.files['image']
             img_data = file.read()
+            print("Received via multipart/form-data")
 
-        # ── Handle raw binary ────────────────────────
-        elif 'image/' in content_type:
+        # 2. Try JSON (Postman 'raw' -> JSON)
+        elif request.is_json:
+            data = request.get_json()
+            if 'image' in data:
+                img_data = base64.b64decode(data['image'])
+                print("Received via JSON")
+
+        # 3. Try Raw Binary (Postman 'binary')
+        elif request.data:
             img_data = request.data
+            print("Received via raw binary")
 
-        # ── Unsupported ──────────────────────────────
-        else:
+        # Fallback if nothing is found
+        if not img_data:
             return jsonify({
-                "error": f"Unsupported Content-Type: {content_type}",
-                "supported": [
-                    "application/json  → body: {image: base64string}",
-                    "multipart/form-data → field: image (file)",
-                    "image/jpeg or image/png → raw binary"
-                ]
+                "error": "No image data found",
+                "message": "Send image as form-data (key: 'image'), JSON (key: 'image'), or raw binary."
             }), 415
 
         # ── Process Image ────────────────────────────
@@ -73,8 +68,7 @@ def generate():
 
         # ── Cleanup & Return ─────────────────────────
         os.remove(input_path)
-        print(f"Done! Job {temp_id} complete")
-
+        
         return send_file(
             output_path,
             mimetype='application/octet-stream',
@@ -85,6 +79,7 @@ def generate():
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

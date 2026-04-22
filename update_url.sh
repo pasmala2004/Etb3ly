@@ -1,7 +1,7 @@
 #!/bin/bash
 
-BACKEND_SET="https://etbaly-backend.vercel.app/api/v1/admin/ai/set-lightning-url"
-BACKEND_GET="https://etbaly-backend.vercel.app/api/v1/admin/ai/lightning-url"
+BACKEND_SET="https://etbaly.yussefrostom.me/api/v1/admin/ai/set-image-to-3d-url"
+BACKEND_GET="https://etbaly.yussefrostom.me/api/v1/admin/ai/image-to-3d-url"
 
 echo "Current URL in backend:"
 curl -s -X GET $BACKEND_GET

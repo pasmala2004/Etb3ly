@@ -17,7 +17,7 @@ print("Device:", pipeline.device)
 print("Pipeline callable:", callable(pipeline))
 
 print("Generating 3D shape...")
-image = Image.open('demo.png').convert('RGB')
+image = Image.open('output.png').convert('RGB')
 
 output = pipeline(
     image=image,
